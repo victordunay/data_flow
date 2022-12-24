@@ -28,6 +28,9 @@ typedef struct {
     unsigned int src2Idx;
 } InstInfo;
 
+
+
+
 /** analyzeProg: Analyze given program and save results
     \param[in] opsLatency An array of MAX_OPS values of functional unit latency for each opcode
                (some entries may be unused - in that case their value would be 0)
