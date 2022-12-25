@@ -104,6 +104,7 @@ void search_for_operand(struct Node ** branches, bool * found_operand, unsigned 
         *found_operand = true;
         *found_branch_index = branch_index;
         *found_branch_offset = branch_offset;
+        break;
       }
       branch_offset++;
       branch_for_search = branch_for_search->next;
