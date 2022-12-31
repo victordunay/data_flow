@@ -5,7 +5,7 @@
 #include "dflow_calc.h"
 
 using namespace std;
-
+int weight_arr[10]={};
 struct Node ** dependency_list = NULL; 
 
 struct Node
@@ -15,6 +15,58 @@ struct Node
    unsigned weight;
    struct Node *next;
 };
+
+
+void sum_weight(struct Node ** branches, unsigned num_of_branches,const unsigned int opsLatency[],const InstInfo progTrace[],unsigned int numOfInsts)
+{
+  struct Node * iterator = NULL;
+
+  for(unsigned instruction_num = 0; instruction_num < numOfInsts; ++instruction_num) // instruction number i
+  {
+    int instruction_max=-1;
+    for(unsigned branch_index = 0; branch_index < num_of_branches; ++branch_index) // dependency_list[i]
+    {
+      iterator = dependency_list[branch_index] ;
+      while(  iterator!=NULL )
+      {
+
+          //if equal update weight
+        if(iterator->instruction_index== instruction_num)
+        {
+          if(iterator->next == NULL/* && instruction_max < 0*/ )
+          {
+            weight_arr[instruction_num]=0;
+            instruction_max=0;
+            break;
+          }
+          else
+          {
+            //not pointing to entry so increse weight by adding the latancy of previous to the weight of the previous
+            if(iterator->next != NULL)
+            {
+            iterator = iterator->next;
+            }
+            weight_arr[instruction_num] = weight_arr[iterator->instruction_index] + opsLatency[progTrace[iterator->instruction_index].opcode];
+            int tmp =weight_arr[iterator->instruction_index] + opsLatency[progTrace[iterator->instruction_index].opcode];
+            if (tmp > instruction_max)
+            {
+            instruction_max=tmp;
+            }
+            break;
+            }
+            
+          }
+          //IF NOT GO NEXT UNTIL NULL AND THAN GOT NEXT BRANCH
+        else
+        {
+          iterator = iterator->next;
+        }   
+      }
+    }
+    weight_arr[instruction_num] =instruction_max;
+  }
+}
+
 
 void push(struct Node** head, unsigned modified_register, unsigned  instruction_index, unsigned weight)
 {
@@ -67,6 +119,7 @@ return;
  
 // display linked list contents
 void displayList(struct Node *node)
+
 {
    //traverse the list to display each node
    while (node != NULL)
@@ -79,6 +132,10 @@ if(node== NULL)
 cout<<"ENTRY" << "\n"; 
 
 } 
+
+
+
+
 
 void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset);
 void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned found_branch_index, unsigned * num_of_active_branches, unsigned found_offset_in_branch, unsigned instruction_index, const unsigned int opsLatency[], const InstInfo progTrace[]);
@@ -121,6 +178,7 @@ void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned fo
   if (found_offset_in_branch == 0)
   {
     push(&dependency_list[found_branch_index], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode]);
+
   }
   else
   {
@@ -198,7 +256,10 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     }
   }
 
+  sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts);
+  cout<<"HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"<<endl;
   return dependency_list;
+
 }
 
 void freeProgCtx(ProgCtx ctx) {
@@ -227,8 +288,10 @@ int getProgDepth(ProgCtx ctx)
     displayList(dependency_list[8]);
     displayList(dependency_list[9]);
 
-
-    return 0;
+    for (int i=0 ; i<10 ; i++){
+      cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
+    }
+return 0;
 }
 
 
