@@ -5,9 +5,9 @@
 #include "dflow_calc.h"
 
 using namespace std;
-int weight_arr[10]={};
-struct Node ** dependency_list = NULL; 
+unsigned MAX=-1;
 
+struct Node ** dependency_list = NULL; 
 struct Node
 {
    unsigned instruction_index;
@@ -16,8 +16,19 @@ struct Node
    struct Node *next;
 };
 
+unsigned bigget_weight(unsigned weight_arr[])
+{
+  for(unsigned i=0;i<10;i++)
+  {
+    if (weight_arr[i] > MAX)
+    {
+      MAX=weight_arr[i];
+    }
+  }
+  return MAX;
+}
 
-void sum_weight(struct Node ** branches, unsigned num_of_branches,const unsigned int opsLatency[],const InstInfo progTrace[],unsigned int numOfInsts)
+void sum_weight(struct Node ** branches, unsigned num_of_branches,const unsigned int opsLatency[],const InstInfo progTrace[],unsigned int numOfInsts,unsigned int weight_arr[])
 {
   struct Node * iterator = NULL;
 
@@ -211,6 +222,7 @@ void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned fo
 
 ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) 
 {
+  unsigned weight_arr[numOfInsts]={};
   unsigned instruction_index = 0;
   unsigned num_of_active_branches = 0;
   bool found_operand_1 = false;
@@ -255,9 +267,12 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
       (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace);
     }
   }
-
-  sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts);
-  cout<<"HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"<<endl;
+  sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, weight_arr );
+    for (unsigned i=0 ; i<10 ; i++)
+    {
+      cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
+    }
+  //  cout << bigget_weight(weight_arr) << endl;
   return dependency_list;
 
 }
@@ -288,9 +303,6 @@ int getProgDepth(ProgCtx ctx)
     displayList(dependency_list[8]);
     displayList(dependency_list[9]);
 
-    for (int i=0 ; i<10 ; i++){
-      cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
-    }
 return 0;
 }
 
