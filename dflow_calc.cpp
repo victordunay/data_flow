@@ -5,9 +5,10 @@
 #include "dflow_calc.h"
 
 using namespace std;
-unsigned MAX=-1;
 
+int MAX_DEPTH=0;
 struct Node ** dependency_list = NULL; 
+
 struct Node
 {
    unsigned instruction_index;
@@ -16,17 +17,73 @@ struct Node
    struct Node *next;
 };
 
-unsigned bigget_weight(unsigned weight_arr[])
+unsigned biggest_weight(unsigned weight_arr[],unsigned int numOfInsts)
 {
-  for(unsigned i=0;i<10;i++)
+  unsigned MAX=0;
+  for(unsigned i=0;i<numOfInsts;i++)
   {
     if (weight_arr[i] > MAX)
     {
       MAX=weight_arr[i];
     }
   }
+
   return MAX;
 }
+
+
+
+void show_dependencies(struct Node ** branches, unsigned num_of_branches,const unsigned int opsLatency[],const InstInfo progTrace[],unsigned int numOfInsts,int dependency_arr[][2])
+{
+  int j=0;
+  struct Node * iterator = NULL;
+
+  for(unsigned instruction_num = 0; instruction_num < numOfInsts; ++instruction_num) // instruction number i
+  {
+    j=0;
+    for(unsigned branch_index = 0; branch_index < num_of_branches; ++branch_index) // dependency_list[i]
+    {
+      iterator = dependency_list[branch_index] ;
+      while(  iterator!=NULL )
+      {
+
+        if(iterator->next == NULL)
+        {
+          break;
+        }
+
+        if(iterator->instruction_index== instruction_num)
+        {
+          if ( dependency_arr[instruction_num][0] !=(int)iterator->next->instruction_index && dependency_arr[instruction_num][1] !=(int)iterator->next->instruction_index )
+          {
+            dependency_arr[instruction_num][j]= (int)iterator->next->instruction_index;
+            iterator = iterator->next;
+            j++;
+            break;
+          }
+          else
+          {
+            iterator = iterator->next;
+          }
+        } 
+        //not the index we were looking for 
+        else
+        {
+          iterator = iterator->next;
+        }
+      }
+      //there is only one dependency
+       if (j==1)
+      {
+        dependency_arr[instruction_num][1]=-1;
+      }
+    }
+  } 
+}
+
+
+
+
 
 void sum_weight(struct Node ** branches, unsigned num_of_branches,const unsigned int opsLatency[],const InstInfo progTrace[],unsigned int numOfInsts,unsigned int weight_arr[])
 {
@@ -44,7 +101,7 @@ void sum_weight(struct Node ** branches, unsigned num_of_branches,const unsigned
           //if equal update weight
         if(iterator->instruction_index== instruction_num)
         {
-          if(iterator->next == NULL/* && instruction_max < 0*/ )
+          if(iterator->next == NULL )
           {
             weight_arr[instruction_num]=0;
             instruction_max=0;
@@ -223,6 +280,7 @@ void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned fo
 ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) 
 {
   unsigned weight_arr[numOfInsts]={};
+  int dependency_arr[numOfInsts][2]={};
   unsigned instruction_index = 0;
   unsigned num_of_active_branches = 0;
   bool found_operand_1 = false;
@@ -231,20 +289,26 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
   unsigned branch_index_of_operand_2 = 0;
   unsigned offset_in_branch_operand_1 = 0;
   unsigned offset_in_branch_operand_2 = 0;
-
+  for (unsigned k=0;k<numOfInsts;k++)
+  {
+    for (int i=0;i<2;i++)
+    {
+      dependency_arr[k][i]=-1;
+    }
+  }
   dependency_list = (struct Node **)malloc(sizeof(struct Node *) * numOfInsts);
   for (instruction_index = 0; instruction_index < numOfInsts; ++instruction_index)
   {
     dependency_list[instruction_index] = NULL;
   }
 
-  printf("=========== PROGRAM TRACE ==========\n");
-  printf("    op     dst    src1     src2    latency\n");
+  //printf("=========== PROGRAM TRACE ==========\n");
+  //printf("    op     dst    src1     src2    latency\n");
   
   for (instruction_index = 0; instruction_index < numOfInsts; ++instruction_index)
   {
    
-    printf("%d ) %d      %d        %d         %d     %d\n", instruction_index, progTrace[instruction_index].opcode, progTrace[instruction_index].dstIdx, progTrace[instruction_index].src1Idx, progTrace[instruction_index].src2Idx,  opsLatency[progTrace[instruction_index].opcode]);
+    //printf("%d ) %d      %d        %d         %d     %d\n", instruction_index, progTrace[instruction_index].opcode, progTrace[instruction_index].dstIdx, progTrace[instruction_index].src1Idx, progTrace[instruction_index].src2Idx,  opsLatency[progTrace[instruction_index].opcode]);
     (void)search_for_operand(dependency_list, &found_operand_1, &branch_index_of_operand_1, num_of_active_branches, progTrace[instruction_index].src1Idx, &offset_in_branch_operand_1);
     (void)search_for_operand(dependency_list, &found_operand_2, &branch_index_of_operand_2, num_of_active_branches, progTrace[instruction_index].src2Idx, &offset_in_branch_operand_2);
 
@@ -268,30 +332,56 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     }
   }
   sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, weight_arr );
-    for (unsigned i=0 ; i<10 ; i++)
+    cout <<endl;
+    for (unsigned i=0 ; i<numOfInsts ; i++)
     {
       cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
     }
-  //  cout << bigget_weight(weight_arr) << endl;
+    MAX_DEPTH=biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[numOfInsts-1].opcode] ;
+    //cout <<endl<<  "MAX DEPTH= " << biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[numOfInsts-1].opcode] << endl<<endl;
+  
+  show_dependencies(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, dependency_arr);
+      cout <<endl<<"SHOW DEPENDECIES:"<<endl<<endl;
+      for (unsigned h=0 ; h<numOfInsts ; h++)
+    {
+
+      cout << h <<": " <<"A)"<< dependency_arr[h][0] <<"   "<<"B)"<< dependency_arr[h][1] <<endl;
+      
+    }
+    cout<<endl;
   return dependency_list;
 
 }
 
-void freeProgCtx(ProgCtx ctx) {
+void freeProgCtx(ProgCtx ctx) 
+{
+
 }
 
 int getInstDepth(ProgCtx ctx, unsigned int theInst)
 {
-
+  //if( theInst < 0  || theInst >= (( (dependency_list*)ctx )->numOfInsts) ) 
+  //{
     return -1;
+  //}
+  //  return weight_arr[theInst] ;
 }
 
-int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) {
+int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) 
+{
+
+  //  if(theInst < 0  || theInst >= (((dependency_list*)ctx)->numOfInsts)) 
+   // {
     return -1;
+   // }
+   // *src1DepInst=dependency_arr[theInst][0]; 
+   // *src2DepInst=dependency_arr[theInst][1];
+    
 }
 
 int getProgDepth(ProgCtx ctx) 
 {
+  /*
     displayList(dependency_list[0]);
     displayList(dependency_list[1]);
     displayList(dependency_list[2]);
@@ -302,8 +392,8 @@ int getProgDepth(ProgCtx ctx)
     displayList(dependency_list[7]);
     displayList(dependency_list[8]);
     displayList(dependency_list[9]);
-
-return 0;
+  */
+return MAX_DEPTH;
 }
 
 
