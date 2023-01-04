@@ -8,7 +8,9 @@ using namespace std;
 
 int MAX_DEPTH=0;
 struct Node ** dependency_list = NULL; 
-
+unsigned * weight_arr = NULL;
+int ** dependency_arr = NULL;
+static unsigned int num_of_instructions = 0;
 struct Node
 {
    unsigned instruction_index;
@@ -33,7 +35,7 @@ unsigned biggest_weight(unsigned weight_arr[],unsigned int numOfInsts)
 
 
 
-void show_dependencies(struct Node ** branches, unsigned num_of_branches,const unsigned int opsLatency[],const InstInfo progTrace[],unsigned int numOfInsts,int dependency_arr[][2])
+void show_dependencies(struct Node ** branches, unsigned num_of_branches,const unsigned int opsLatency[],const InstInfo progTrace[],unsigned int numOfInsts,int ** dependency_arr)
 {
   int j=0;
   struct Node * iterator = NULL;
@@ -192,18 +194,14 @@ void displayList(struct Node *node)
    //traverse the list to display each node
    while (node != NULL)
    {
-      cout<<node->instruction_index <<"-->";
+      // cout<<node->instruction_index <<"-->";
       node = node->next;
    }
  
-if(node== NULL)
-cout<<"ENTRY" << "\n"; 
+// if(node== NULL)
+// cout<<"ENTRY" << "\n"; 
 
 } 
-
-
-
-
 
 void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset);
 void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned found_branch_index, unsigned * num_of_active_branches, unsigned found_offset_in_branch, unsigned instruction_index, const unsigned int opsLatency[], const InstInfo progTrace[]);
@@ -275,12 +273,10 @@ void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned fo
 }
 
 
-
-
 ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) 
 {
-  unsigned weight_arr[numOfInsts]={};
-  int dependency_arr[numOfInsts][2]={};
+  // unsigned weight_arr[numOfInsts]={};
+  // int dependency_arr[numOfInsts][2]={};
   unsigned instruction_index = 0;
   unsigned num_of_active_branches = 0;
   bool found_operand_1 = false;
@@ -289,13 +285,21 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
   unsigned branch_index_of_operand_2 = 0;
   unsigned offset_in_branch_operand_1 = 0;
   unsigned offset_in_branch_operand_2 = 0;
-  for (unsigned k=0;k<numOfInsts;k++)
+  num_of_instructions = numOfInsts;
+
+  dependency_arr = (int **)malloc(sizeof(int *) * numOfInsts);
+  for (instruction_index = 0 ; instruction_index < numOfInsts; instruction_index++)
   {
-    for (int i=0;i<2;i++)
+    dependency_arr[instruction_index] = (int * )malloc(sizeof(int) * 2);
+  }
+  for (instruction_index = 0 ; instruction_index < numOfInsts; instruction_index++)
+  {
+    for (int i = 0; i < 2; i++)
     {
-      dependency_arr[k][i]=-1;
+      dependency_arr[instruction_index][i] = -1;
     }
   }
+  weight_arr = (unsigned *)malloc(sizeof(unsigned) * numOfInsts);
   dependency_list = (struct Node **)malloc(sizeof(struct Node *) * numOfInsts);
   for (instruction_index = 0; instruction_index < numOfInsts; ++instruction_index)
   {
@@ -332,23 +336,23 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     }
   }
   sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, weight_arr );
-    cout <<endl;
-    for (unsigned i=0 ; i<numOfInsts ; i++)
-    {
-      cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
-    }
+    // cout <<endl;
+    // for (unsigned i=0 ; i<numOfInsts ; i++)
+    // {
+    //   cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
+    // }
     MAX_DEPTH=biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[numOfInsts-1].opcode] ;
     //cout <<endl<<  "MAX DEPTH= " << biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[numOfInsts-1].opcode] << endl<<endl;
   
   show_dependencies(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, dependency_arr);
-      cout <<endl<<"SHOW DEPENDECIES:"<<endl<<endl;
-      for (unsigned h=0 ; h<numOfInsts ; h++)
-    {
+    //   cout <<endl<<"SHOW DEPENDECIES:"<<endl<<endl;
+    //   for (unsigned h=0 ; h<numOfInsts ; h++)
+    // {
 
-      cout << h <<": " <<"A)"<< dependency_arr[h][0] <<"   "<<"B)"<< dependency_arr[h][1] <<endl;
+    //   cout << h <<": " <<"A)"<< dependency_arr[h][0] <<"   "<<"B)"<< dependency_arr[h][1] <<endl;
       
-    }
-    cout<<endl;
+    // }
+    // cout<<endl;
   return dependency_list;
 
 }
@@ -360,22 +364,24 @@ void freeProgCtx(ProgCtx ctx)
 
 int getInstDepth(ProgCtx ctx, unsigned int theInst)
 {
-  //if( theInst < 0  || theInst >= (( (dependency_list*)ctx )->numOfInsts) ) 
-  //{
+  if( theInst < 0  || theInst >= num_of_instructions) 
+  {
     return -1;
-  //}
-  //  return weight_arr[theInst] ;
+  }
+    return weight_arr[theInst] ;
 }
 
 int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) 
 {
 
-  //  if(theInst < 0  || theInst >= (((dependency_list*)ctx)->numOfInsts)) 
-   // {
+  if( theInst < 0  || theInst >= num_of_instructions) 
+   {
     return -1;
-   // }
-   // *src1DepInst=dependency_arr[theInst][0]; 
-   // *src2DepInst=dependency_arr[theInst][1];
+   }
+   *src1DepInst = dependency_arr[theInst][0]; 
+   *src2DepInst = dependency_arr[theInst][1];
+    return 0;
+
     
 }
 
