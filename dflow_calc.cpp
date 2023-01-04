@@ -6,6 +6,13 @@
 
 using namespace std;
 
+
+typedef enum
+{
+  LEFT,
+  RIGHT
+} src_t;
+
 int MAX_DEPTH=0;
 struct Node ** dependency_list = NULL; 
 unsigned * weight_arr = NULL;
@@ -16,6 +23,7 @@ struct Node
    unsigned instruction_index;
    unsigned modified_register;
    unsigned weight;
+   src_t src;
    struct Node *next;
 };
 
@@ -138,7 +146,7 @@ void sum_weight(struct Node ** branches, unsigned num_of_branches,const unsigned
 }
 
 
-void push(struct Node** head, unsigned modified_register, unsigned  instruction_index, unsigned weight)
+void push(struct Node** head, unsigned modified_register, unsigned  instruction_index, unsigned weight, src_t src)
 {
    /* 1. create and allocate node */
    struct Node* newNode = new Node;
@@ -147,6 +155,7 @@ void push(struct Node** head, unsigned modified_register, unsigned  instruction_
    newNode->modified_register = modified_register;
    newNode->instruction_index = instruction_index;
    newNode->weight = weight;
+   newNode->src = src;
 
    /* 3. set next of new node as head */
    newNode->next = (*head);
@@ -156,35 +165,36 @@ void push(struct Node** head, unsigned modified_register, unsigned  instruction_
 }
 
 /* insert new node at the end of the linked list */
-void append(struct Node** head, unsigned modified_register, unsigned  instruction_index, unsigned weight)
+void append(struct Node** head, unsigned modified_register, unsigned  instruction_index, unsigned weight, src_t src)
 {
-/* 1. create and allocate node */
-struct Node* newNode = new Node;
- 
-struct Node *last = *head; /* used in step 5*/
- 
-/* 2. assign data to the node */
-newNode->modified_register = modified_register;
-newNode->instruction_index = instruction_index;
-newNode->weight = weight;
+  /* 1. create and allocate node */
+  struct Node* newNode = new Node;
+  
+  struct Node *last = *head; /* used in step 5*/
+  
+  /* 2. assign data to the node */
+  newNode->modified_register = modified_register;
+  newNode->instruction_index = instruction_index;
+  newNode->weight = weight;
+  newNode->src = src;
 
-/* 3. set next pointer of new node to null as its the last node*/
-newNode->next = NULL;
- 
-/* 4. if list is empty, new node becomes first node */
-if (*head == NULL)
-{
-*head = newNode;
-return;
-}
- 
-/* 5. Else traverse till the last node */
-while (last->next != NULL)
-last = last->next;
- 
-/* 6. Change the next of last node */
-last->next = newNode;
-return;
+  /* 3. set next pointer of new node to null as its the last node*/
+  newNode->next = NULL;
+  
+  /* 4. if list is empty, new node becomes first node */
+  if (*head == NULL)
+  {
+  *head = newNode;
+  return;
+  }
+  
+  /* 5. Else traverse till the last node */
+  while (last->next != NULL)
+  last = last->next;
+  
+  /* 6. Change the next of last node */
+  last->next = newNode;
+  return;
 }
  
 // display linked list contents
@@ -204,7 +214,7 @@ void displayList(struct Node *node)
 } 
 
 void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset);
-void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned found_branch_index, unsigned * num_of_active_branches, unsigned found_offset_in_branch, unsigned instruction_index, const unsigned int opsLatency[], const InstInfo progTrace[]);
+void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned found_branch_index, unsigned * num_of_active_branches, unsigned found_offset_in_branch, unsigned instruction_index, const unsigned int opsLatency[], const InstInfo progTrace[], src_t src);
 
 void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset)
 {
@@ -235,7 +245,7 @@ void search_for_operand(struct Node ** branches, bool * found_operand, unsigned 
   }
 }
 
-void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned found_branch_index, unsigned * num_of_active_branches, unsigned found_offset_in_branch, unsigned instruction_index, const unsigned int opsLatency[], const InstInfo progTrace[])
+void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned found_branch_index, unsigned * num_of_active_branches, unsigned found_offset_in_branch, unsigned instruction_index, const unsigned int opsLatency[], const InstInfo progTrace[], src_t src)
 {   
   struct Node* dependent_branch = NULL; 
 
@@ -243,12 +253,12 @@ void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned fo
   
   if (found_offset_in_branch == 0)
   {
-    push(&dependency_list[found_branch_index], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode]);
+    push(&dependency_list[found_branch_index], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode], src);
 
   }
   else
   {
-    push(&dependency_list[*num_of_active_branches], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode]);
+    push(&dependency_list[*num_of_active_branches], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode], src);
     dependent_branch = dependency_list[found_branch_index];
     while( found_offset_in_branch > 0)
     {
@@ -257,7 +267,7 @@ void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned fo
     }
     while(NULL != dependent_branch)
     {
-      append(&dependency_list[*num_of_active_branches], dependent_branch->modified_register, dependent_branch->instruction_index, opsLatency[progTrace[instruction_index].opcode]);
+      append(&dependency_list[*num_of_active_branches], dependent_branch->modified_register, dependent_branch->instruction_index, opsLatency[progTrace[instruction_index].opcode], dependent_branch->src);
       
       if ( NULL == dependent_branch->next)
       {
@@ -318,21 +328,21 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
 
     if (!found_operand_1 & !found_operand_2)
     {
-      push(&dependency_list[num_of_active_branches], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode]);
+      push(&dependency_list[num_of_active_branches], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode], LEFT);
       num_of_active_branches++;
     }
     else if (found_operand_1 & !found_operand_2)
     {
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace);
+      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
     } 
     else if (!found_operand_1 & found_operand_2)
     {
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace);
+      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
     }   
     else
     {
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace);
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace);
+      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
     }
   }
   sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, weight_arr );
