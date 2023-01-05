@@ -212,14 +212,14 @@ void displayList(struct Node *node)
 
 {
    //traverse the list to display each node
-//    while (node != NULL)
-//    {
-//        cout<<node->instruction_index <<"-->";
-//       node = node->next;
-//    }
+   while (node != NULL)
+   {
+       cout<<node->instruction_index <<"-->";
+      node = node->next;
+   }
  
-//  if(node== NULL)
-//  cout<<"ENTRY" << "\n"; 
+ if(node== NULL)
+ cout<<"ENTRY" << "\n"; 
 
 } 
 
@@ -326,13 +326,13 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     dependency_list[instruction_index] = NULL;
   }
 
-  //printf("=========== PROGRAM TRACE ==========\n");
-  //printf("    op     dst    src1     src2    latency\n");
+  printf("=========== PROGRAM TRACE ==========\n");
+  printf("    op     dst    src1     src2    latency\n");
   
   for (instruction_index = 0; instruction_index < numOfInsts; ++instruction_index)
   {
    
-    //printf("%d ) %d      %d        %d         %d     %d\n", instruction_index, progTrace[instruction_index].opcode, progTrace[instruction_index].dstIdx, progTrace[instruction_index].src1Idx, progTrace[instruction_index].src2Idx,  opsLatency[progTrace[instruction_index].opcode]);
+    printf("%d ) %d      %d        %d         %d     %d\n", instruction_index, progTrace[instruction_index].opcode, progTrace[instruction_index].dstIdx, progTrace[instruction_index].src1Idx, progTrace[instruction_index].src2Idx,  opsLatency[progTrace[instruction_index].opcode]);
     (void)search_for_operand(dependency_list, &found_operand_1, &branch_index_of_operand_1, num_of_active_branches, progTrace[instruction_index].src1Idx, &offset_in_branch_operand_1);
     (void)search_for_operand(dependency_list, &found_operand_2, &branch_index_of_operand_2, num_of_active_branches, progTrace[instruction_index].src2Idx, &offset_in_branch_operand_2);
 
@@ -349,10 +349,18 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     {
       (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
     }   
-    else
+    else 
     {
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
+      if (branch_index_of_operand_1 != branch_index_of_operand_2)
+      {
+        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
+      }
+      else
+      {
+        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+      }
+
     }
   }
   sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, weight_arr );
@@ -407,17 +415,10 @@ int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2De
 
 int getProgDepth(ProgCtx ctx) 
 {
-  
-    // displayList(dependency_list[0]);
-    // displayList(dependency_list[1]);
-    // displayList(dependency_list[2]);
-    // displayList(dependency_list[3]);
-    // displayList(dependency_list[4]);
-    // displayList(dependency_list[5]);
-    // displayList(dependency_list[6]);
-    // displayList(dependency_list[7]);
-    // displayList(dependency_list[8]);
-    // displayList(dependency_list[9]);
+ // for (int i=0;i<*num_of_active_branches;i++)
+  for (int i=0;i<50;i++)
+    displayList(dependency_list[i]);
+
   
 return MAX_DEPTH;
 }
