@@ -14,6 +14,7 @@ typedef enum
 } src_t;
 
 int MAX_DEPTH=0;
+int max_index = -1;
 struct Node ** dependency_list = NULL; 
 unsigned * weight_arr = NULL;
 int ** dependency_arr = NULL;
@@ -35,6 +36,7 @@ unsigned biggest_weight(unsigned weight_arr[],unsigned int numOfInsts)
     if (weight_arr[i] > MAX)
     {
       MAX=weight_arr[i];
+      max_index = i;
     }
   }
 
@@ -50,7 +52,7 @@ void show_dependencies(struct Node ** branches, unsigned num_of_branches,const u
 
   for(unsigned instruction_num = 0; instruction_num < numOfInsts; ++instruction_num) // instruction number i
   {
-    j=0;
+    //j=0;
     for(unsigned branch_index = 0; branch_index < num_of_branches; ++branch_index) // dependency_list[i]
     {
       iterator = dependency_list[branch_index] ;
@@ -61,14 +63,22 @@ void show_dependencies(struct Node ** branches, unsigned num_of_branches,const u
         {
           break;
         }
-
+        //LEFT=0    RIGHT=1
         if(iterator->instruction_index== instruction_num)
         {
           if ( dependency_arr[instruction_num][0] !=(int)iterator->next->instruction_index && dependency_arr[instruction_num][1] !=(int)iterator->next->instruction_index )
           {
+            if (iterator->src==LEFT)
+            {
+              j=0;
+            }
+            else
+            {
+              j=1;
+            }
             dependency_arr[instruction_num][j]= (int)iterator->next->instruction_index;
             iterator = iterator->next;
-            j++;
+            //j++;
             break;
           }
           else
@@ -83,13 +93,15 @@ void show_dependencies(struct Node ** branches, unsigned num_of_branches,const u
         }
       }
       //there is only one dependency
-       if (j==1)
-      {
-        dependency_arr[instruction_num][1]=-1;
-      }
+      //  if (j==1)
+      // {
+      //   dependency_arr[instruction_num][1]=-1;
+      // }
     }
   } 
 }
+
+
 
 
 
@@ -341,8 +353,15 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     }   
     else
     {
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
+      if (progTrace[instruction_index].src1Idx == progTrace[instruction_index].src2Idx)
+      {
+        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+      }
+      else
+      {
+        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
+      }
     }
   }
   sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, weight_arr );
@@ -351,7 +370,7 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     // {
     //   cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
     // }
-    MAX_DEPTH=biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[numOfInsts-1].opcode] ;
+    MAX_DEPTH=biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[max_index - 1].opcode] ;
     //cout <<endl<<  "MAX DEPTH= " << biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[numOfInsts-1].opcode] << endl<<endl;
   
   show_dependencies(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, dependency_arr);
@@ -363,6 +382,16 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
       
     // }
     // cout<<endl;
+    displayList(dependency_list[0]);
+    displayList(dependency_list[1]);
+    displayList(dependency_list[2]);
+    displayList(dependency_list[3]);
+    displayList(dependency_list[4]);
+    displayList(dependency_list[5]);
+    displayList(dependency_list[6]);
+    displayList(dependency_list[7]);
+    displayList(dependency_list[8]);
+    displayList(dependency_list[9]);
   return dependency_list;
 
 }
@@ -397,7 +426,7 @@ int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2De
 
 int getProgDepth(ProgCtx ctx) 
 {
-  /*
+  
     displayList(dependency_list[0]);
     displayList(dependency_list[1]);
     displayList(dependency_list[2]);
@@ -408,7 +437,7 @@ int getProgDepth(ProgCtx ctx)
     displayList(dependency_list[7]);
     displayList(dependency_list[8]);
     displayList(dependency_list[9]);
-  */
+  
 return MAX_DEPTH;
 }
 
