@@ -28,12 +28,12 @@ struct Node
    struct Node *next;
 };
 
-unsigned biggest_weight(unsigned weight_arr[],unsigned int numOfInsts)
+unsigned biggest_weight(unsigned weight_arr[],unsigned int numOfInsts, const unsigned int opsLatency[])
 {
   unsigned MAX=0;
   for(unsigned i=0;i<numOfInsts;i++)
   {
-    if (weight_arr[i] > MAX)
+    if (weight_arr[i] + opsLatency[i]> MAX)
     {
       MAX=weight_arr[i];
       max_index = i;
@@ -216,12 +216,12 @@ void displayList(struct Node *node)
    //traverse the list to display each node
    while (node != NULL)
    {
-      // cout<<node->instruction_index <<"-->";
+      cout<<node->instruction_index <<"-->";
       node = node->next;
    }
  
-// if(node== NULL)
-// cout<<"ENTRY" << "\n"; 
+if(node== NULL)
+cout<<"ENTRY" << "\n"; 
 
 } 
 
@@ -328,13 +328,13 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     dependency_list[instruction_index] = NULL;
   }
 
-  //printf("=========== PROGRAM TRACE ==========\n");
-  //printf("    op     dst    src1     src2    latency\n");
+  // printf("=========== PROGRAM TRACE ==========\n");
+  // printf("    op     dst    src1     src2    latency\n");
   
   for (instruction_index = 0; instruction_index < numOfInsts; ++instruction_index)
   {
    
-    //printf("%d ) %d      %d        %d         %d     %d\n", instruction_index, progTrace[instruction_index].opcode, progTrace[instruction_index].dstIdx, progTrace[instruction_index].src1Idx, progTrace[instruction_index].src2Idx,  opsLatency[progTrace[instruction_index].opcode]);
+    printf("%d ) %d      %d        %d         %d     %d\n", instruction_index, progTrace[instruction_index].opcode, progTrace[instruction_index].dstIdx, progTrace[instruction_index].src1Idx, progTrace[instruction_index].src2Idx,  opsLatency[progTrace[instruction_index].opcode]);
     (void)search_for_operand(dependency_list, &found_operand_1, &branch_index_of_operand_1, num_of_active_branches, progTrace[instruction_index].src1Idx, &offset_in_branch_operand_1);
     (void)search_for_operand(dependency_list, &found_operand_2, &branch_index_of_operand_2, num_of_active_branches, progTrace[instruction_index].src2Idx, &offset_in_branch_operand_2);
 
@@ -370,7 +370,7 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     // {
     //   cout << " depth in clocks :"<< i <<" ) " << weight_arr[i]<<endl;
     // }
-    MAX_DEPTH=biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[max_index - 1].opcode] ;
+    MAX_DEPTH=biggest_weight(weight_arr,numOfInsts, opsLatency) + opsLatency[progTrace[max_index].opcode] ;
     //cout <<endl<<  "MAX DEPTH= " << biggest_weight(weight_arr,numOfInsts) + opsLatency[progTrace[numOfInsts-1].opcode] << endl<<endl;
   
   show_dependencies(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, dependency_arr);
@@ -382,16 +382,7 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
       
     // }
     // cout<<endl;
-    displayList(dependency_list[0]);
-    displayList(dependency_list[1]);
-    displayList(dependency_list[2]);
-    displayList(dependency_list[3]);
-    displayList(dependency_list[4]);
-    displayList(dependency_list[5]);
-    displayList(dependency_list[6]);
-    displayList(dependency_list[7]);
-    displayList(dependency_list[8]);
-    displayList(dependency_list[9]);
+
   return dependency_list;
 
 }
@@ -427,16 +418,16 @@ int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2De
 int getProgDepth(ProgCtx ctx) 
 {
   
-    displayList(dependency_list[0]);
-    displayList(dependency_list[1]);
-    displayList(dependency_list[2]);
-    displayList(dependency_list[3]);
-    displayList(dependency_list[4]);
-    displayList(dependency_list[5]);
-    displayList(dependency_list[6]);
-    displayList(dependency_list[7]);
-    displayList(dependency_list[8]);
-    displayList(dependency_list[9]);
+    // displayList(dependency_list[0]);
+    // displayList(dependency_list[1]);
+    // displayList(dependency_list[2]);
+    // displayList(dependency_list[3]);
+    // displayList(dependency_list[4]);
+    // displayList(dependency_list[5]);
+    // displayList(dependency_list[6]);
+    // displayList(dependency_list[7]);
+    // displayList(dependency_list[8]);
+    // displayList(dependency_list[9]);
   
 return MAX_DEPTH;
 }
