@@ -225,10 +225,10 @@ cout<<"ENTRY" << "\n";
 
 } 
 
-void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset);
+void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset, unsigned * num_of_active_branches);
 void add_operand_dependece_to_branch(struct Node ** dependency_list, unsigned found_branch_index, unsigned * num_of_active_branches, unsigned found_offset_in_branch, unsigned instruction_index, const unsigned int opsLatency[], const InstInfo progTrace[], src_t src);
 
-void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset)
+void search_for_operand(struct Node ** branches, bool * found_operand, unsigned * found_branch_index, unsigned num_of_branches, unsigned operand, unsigned * found_branch_offset, unsigned * num_of_active_branches)
 {
   unsigned branch_index = 0;
   unsigned branch_offset = 0;
@@ -328,41 +328,60 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     dependency_list[instruction_index] = NULL;
   }
 
-  // printf("=========== PROGRAM TRACE ==========\n");
-  // printf("    op     dst    src1     src2    latency\n");
+  printf("=========== PROGRAM TRACE ==========\n");
+  printf("    op     dst    src1     src2    latency\n");
   
   for (instruction_index = 0; instruction_index < numOfInsts; ++instruction_index)
   {
    
     printf("%d ) %d      %d        %d         %d     %d\n", instruction_index, progTrace[instruction_index].opcode, progTrace[instruction_index].dstIdx, progTrace[instruction_index].src1Idx, progTrace[instruction_index].src2Idx,  opsLatency[progTrace[instruction_index].opcode]);
-    (void)search_for_operand(dependency_list, &found_operand_1, &branch_index_of_operand_1, num_of_active_branches, progTrace[instruction_index].src1Idx, &offset_in_branch_operand_1);
-    (void)search_for_operand(dependency_list, &found_operand_2, &branch_index_of_operand_2, num_of_active_branches, progTrace[instruction_index].src2Idx, &offset_in_branch_operand_2);
+    // (void)search_for_operand(dependency_list, &found_operand_1, &branch_index_of_operand_1, num_of_active_branches, progTrace[instruction_index].src1Idx, &offset_in_branch_operand_1,&num_of_active_branches);
+    // (void)search_for_operand(dependency_list, &found_operand_2, &branch_index_of_operand_2, num_of_active_branches, progTrace[instruction_index].src2Idx, &offset_in_branch_operand_2,&num_of_active_branches);
 
-    if (!found_operand_1 & !found_operand_2)
-    {
-      push(&dependency_list[num_of_active_branches], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode], LEFT);
-      num_of_active_branches++;
-    }
-    else if (found_operand_1 & !found_operand_2)
-    {
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
-    } 
-    else if (!found_operand_1 & found_operand_2)
-    {
-      (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
-    }   
-    else
-    {
-      if (progTrace[instruction_index].src1Idx == progTrace[instruction_index].src2Idx)
-      {
-        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
-      }
-      else
-      {
-        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
-        (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
-      }
-    }
+    // if (!found_operand_1 & !found_operand_2)
+    // {
+    //   push(&dependency_list[num_of_active_branches], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode], RIGHT);
+    //   num_of_active_branches++;
+    // }
+    // else if (found_operand_1 & !found_operand_2)
+    // {
+    //   (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+    // } 
+    // else if (!found_operand_1 & found_operand_2)
+    // {
+    //   (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
+    // }   
+    // else
+    // {
+    //   if (progTrace[instruction_index].src1Idx == progTrace[instruction_index].src2Idx)
+    //   {
+    //     (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+    //   }
+    //   else
+    //   {
+    //     (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+    //     (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
+    //   }
+    // }
+        (void)search_for_operand(dependency_list, &found_operand_1, &branch_index_of_operand_1, num_of_active_branches, progTrace[instruction_index].src1Idx, &offset_in_branch_operand_1,&num_of_active_branches);
+        if (found_operand_1  )
+        {
+          (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_1, &num_of_active_branches, offset_in_branch_operand_1, instruction_index, opsLatency, progTrace, LEFT);
+        }
+        (void)search_for_operand(dependency_list, &found_operand_2, &branch_index_of_operand_2, num_of_active_branches, progTrace[instruction_index].src2Idx, &offset_in_branch_operand_2,&num_of_active_branches);
+        if (found_operand_2  )
+        {
+          (void)add_operand_dependece_to_branch(dependency_list, branch_index_of_operand_2, &num_of_active_branches, offset_in_branch_operand_2, instruction_index, opsLatency, progTrace, RIGHT);
+        }
+
+        if (!found_operand_1 & !found_operand_2)
+        {
+          push(&dependency_list[num_of_active_branches], progTrace[instruction_index].dstIdx, instruction_index,  opsLatency[progTrace[instruction_index].opcode], LEFT);
+          num_of_active_branches++;
+        }
+
+
+
   }
   sum_weight(dependency_list,  num_of_active_branches, opsLatency, progTrace,numOfInsts, weight_arr );
     // cout <<endl;
@@ -417,7 +436,10 @@ int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2De
 
 int getProgDepth(ProgCtx ctx) 
 {
-  
+  for (int i=0;i<51;i++)
+  {
+     displayList(dependency_list[i]);
+  }
     // displayList(dependency_list[0]);
     // displayList(dependency_list[1]);
     // displayList(dependency_list[2]);
