@@ -1,26 +1,26 @@
 #include "dflow_calc.h"
 int MAX_DEPTH=0;
 struct Inst_table * main_table = NULL; 
-struct Inst_table *inst_arr = NULL; 
+//struct Inst_table *inst_arr = NULL; 
 
 //*****************DATA STRUCTURE*****************************
 //individual instruction
- struct Inst
+struct Inst
 {
    unsigned opcode;
    unsigned depth;
    int dependency_1;
    int dependency_2;
    unsigned latency;
-}Inst;
+};
 
 //arr of type struct each index is instruction 
  struct Inst_table
 {
     int reg_arr[32];
     struct Inst *inst_arr; 
-    inst_arr = (struct Inst_table *)malloc(sizeof(struct Inst ) * numOfInsts);
-}Inst_table;
+  //  inst_arr = malloc(sizeof(struct Inst ) * numOfInsts);
+};
 
 
 //*********************UPDATE FUNCTIONS**********************
@@ -63,7 +63,9 @@ unsigned init_2(struct Inst_table * main_table,unsigned index, int src_index)
 ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) 
 {
     int tmp=0;
+    
     main_table = (struct Inst_table *) malloc(sizeof(struct Inst ) * numOfInsts);
+    main_table->inst_arr = malloc(sizeof(struct Inst ) * numOfInsts);
     for (int i = 0; i < 32; i++) 
     {
         main_table->reg_arr[i] = -2; //-1 is entry so NULL is -2
