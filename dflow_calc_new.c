@@ -14,7 +14,7 @@ struct Inst
 //arr of type struct each index is instruction 
 struct Inst_table
 {
-    Inst *inst_arr; 
+    struct Inst *inst_arr; 
     inst_arr = (int *)malloc(sizeof(int *) * numOfInsts);
     int reg_arr[32];
     unsigned num_of_inst = numOfInsts; 
@@ -37,7 +37,9 @@ unsigned init_1( struct Node * main_table ,unsigned index , int src_index)
         (main_table->inst_arr[index]).dependency_1 = -1;
         updated_src_1=0;
     }
-    return updated_src_1 = main_table->inst_arr[src_index].depth + main_table->inst_arr[src_index].latency; 
+    //sum the depth+latancy for calc the MAX depth and inst_depth
+     updated_src_1 = main_table->inst_arr[src_index].depth + main_table->inst_arr[src_index].latency; 
+     return updated_src_1;
 }
 
 //for right src
@@ -53,7 +55,8 @@ unsigned init_2(struct Node * main_table,unsigned index, int src_index)
         updated_src_2=0;//depend on entry so depth =0
     }
     //sum the depth+latancy for calc the MAX depth and inst_depth
-    return updated_src_2 = main_table->inst_arr[src_index].depth + main_table->inst_arr[src_index].latency; 
+     updated_src_2 = main_table->inst_arr[src_index].depth + main_table->inst_arr[src_index].latency; 
+     return updated_src_2;
 }
 
 ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) 
@@ -115,17 +118,18 @@ void freeProgCtx(ProgCtx ctx)
 
 int getInstDepth(ProgCtx ctx, unsigned int theInst)
 {
-  if( theInst < 0  || theInst >= num_of_instructions) 
+  if( theInst < 0  /*|| theInst >= num_of_instructions*/) 
   {
     return -1;
   }
-    return weight_arr[theInst] ;
+    // return weight_arr[theInst] ;
+    return 0;
 }
 
 int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) 
 {
 
-  if( theInst < 0  || theInst >= num_of_instructions) 
+  if( theInst < 0  /*|| theInst >= num_of_instructions*/) 
    {
     return -1;
    }
