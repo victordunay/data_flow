@@ -71,7 +71,7 @@ unsigned int init_2(struct Inst_table * main_table ,unsigned index, int src_inde
 
 ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) 
 {
-    int tmp=0;
+    // int tmp=0;
     num_of_inst=numOfInsts;
     main_table = (struct Inst_table *) malloc(sizeof(struct Inst ) * numOfInsts);
     main_table->inst_arr = malloc(sizeof(struct Inst ) * numOfInsts);
@@ -92,25 +92,25 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
     //printf("reg_arr[i]=%d\n",main_table->reg_arr[progTrace[i].src1Idx]);
     unsigned int updated_depth_1=init_1( main_table , i , main_table->reg_arr[progTrace[i].src1Idx] );
     //right src
-    unsigned int updated_depth_2=init_2( main_table , i , main_table->reg_arr[progTrace[i].src1Idx] );
+    unsigned int updated_depth_2=init_2( main_table , i , main_table->reg_arr[progTrace[i].src2Idx] );
     //the inst depth is the max between the two src depths (with the latency of the last)
     if(updated_depth_1 < updated_depth_2)
     {
         main_table->inst_arr[i].depth = updated_depth_2;
-        tmp= updated_depth_2;
-        if (MAX_DEPTH < tmp)
-        {
-        MAX_DEPTH =updated_depth_2;
-        }
+        // tmp= updated_depth_2;
+        // if (MAX_DEPTH < tmp)
+        // {
+        // MAX_DEPTH =updated_depth_2;
+        // }
     }
     else
     {
         main_table->inst_arr[i].depth = updated_depth_2;
-        tmp= updated_depth_2;
-        if (MAX_DEPTH < tmp)
-        {
-        MAX_DEPTH =updated_depth_2;
-        }
+        // tmp= updated_depth_2;
+        // if (MAX_DEPTH < tmp)
+        // {
+        // MAX_DEPTH =updated_depth_2;
+        // }
     }
     //updating register
     main_table->reg_arr[progTrace[i].dstIdx] = i;
@@ -161,16 +161,16 @@ int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2De
 
 int getProgDepth(ProgCtx ctx) 
 {
-return MAX_DEPTH;
-    // int max_depth = 0;
-    // for ( int i = 0; i < num_of_inst; i++) 
-    // {
-    //     if ((   (  main_table->inst_arr[i]).depth + (main_table->inst_arr[i]).latency) > max_depth)
-    //      {
-    //         max_depth = ((main_table->inst_arr[i]).depth + (main_table->inst_arr[i]).latency);
-    //     }
-    // }
-    // return max_depth;
+// return MAX_DEPTH;
+    int max_depth = 0;
+    for ( int i = 0; i < num_of_inst; i++) 
+    {
+        if ((   (  main_table->inst_arr[i]).depth + (main_table->inst_arr[i]).latency) > max_depth)
+         {
+            max_depth = ((main_table->inst_arr[i]).depth + (main_table->inst_arr[i]).latency);
+        }
+    }
+    return max_depth;
 }
 
 
