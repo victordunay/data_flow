@@ -1,37 +1,26 @@
 #include "dflow_calc.h"
 int MAX_DEPTH=-1;
 
-class Instruction_Entry {
-public:
-    unsigned int opcode;
-    unsigned int depth;
-    int dependency_1;
-    int dependency_2;
-    unsigned int latency;
+struct instructions * main_table = NULL; 
+//one instruction with all the data we need
+struct Inst
+{
+   unsigned int opcode;
+   unsigned int depth;
+   int dependency_1;
+   int dependency_2;
+   unsigned int latency;
 };
-
-class Instructions_Table {
-public:
-    int reg_arr[32]; /* Registers Array */
-    Instruction_Entry* inst_arr; /* Entries Array */
-    unsigned int Number_of_instructions;  /* Ins Number */
-
-    /* Database Constructor , initializing the arrays */
-    Instructions_Table(unsigned int numOfInsts) {
-        Number_of_instructions = numOfInsts;
-        for (int i = 0; i < 32; i++) {
-            reg_arr[i] = -2;  /* -2 Means not entered */
-        }
-        inst_arr = new Instruction_Entry[numOfInsts];
-    }
+//table of instructions 
+struct instructions
+{
+    unsigned int num_of_inst;
+    int reg_arr[32];
+    struct Inst *inst_arr; 
 };
-
-
-
-//*********************UPDATE FUNCTIONS**********************
 
 //for left src
-unsigned int init_1( Instructions_Table* main_table ,int index , int src_index)
+unsigned int init_1( instructions* main_table ,int index , int src_index)
 {
     unsigned int updated_src_1;
     if (src_index != -2)//check reg_arr if it depend on other, if not then equal entry
@@ -45,11 +34,12 @@ unsigned int init_1( Instructions_Table* main_table ,int index , int src_index)
         main_table->inst_arr[index].dependency_1 = -1;
         updated_src_1=0;
     }
-    //sum the depth+latency for calc the MAX depth and inst_depth
+    //sum the depth for calc the MAX depth and getInstDepth
      return updated_src_1;
 }
+
 //for right src
-unsigned int init_2(Instructions_Table* main_table ,unsigned index, int src_index)
+unsigned int init_2(instructions* main_table ,unsigned index, int src_index)
 {
     unsigned int updated_src_2;
     if (src_index != -2)//check reg_arr if it depend on other, if not then equal entry
@@ -62,37 +52,40 @@ unsigned int init_2(Instructions_Table* main_table ,unsigned index, int src_inde
         main_table->inst_arr[index].dependency_2 = -1;
         updated_src_2=0;//depend on entry so depth =0
     }
-    //sum the depth+latency for calc the MAX depth and inst_depth
+    //sum the depth for calc the MAX depth and getInstDepth
      return updated_src_2;
 }
 
+ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) {
+    main_table = (struct instructions *) malloc(sizeof(struct Inst ) * numOfInsts);
+    main_table->inst_arr = (struct Inst *)malloc(sizeof(struct Inst ) * numOfInsts);
 
-//****************************************************************************
-
-
-ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts) 
-{
-    Instructions_Table* main_table= new Instructions_Table(numOfInsts);
-    for (unsigned int i = 0; i < main_table->Number_of_instructions; i++) 
+    for (int i = 0; i < 32; i++) 
     {
-        /* Filling entries accordingly to the index of the ins */
+        main_table->reg_arr[i] = -2; //-1 is entry so NULL is -2
+    }
+
+    main_table->num_of_inst = numOfInsts;
+    for (unsigned int i = 0; i < main_table->num_of_inst; i++) 
+    {
         main_table->inst_arr[i].opcode = progTrace[i].opcode;
         main_table->inst_arr[i].latency = opsLatency[progTrace[i].opcode];
 
         // left src
-        unsigned int depth_src1=init_1( main_table , i , main_table->reg_arr[progTrace[i].src1Idx] );
+        unsigned int updated_depth_1=init_1( main_table , i , main_table->reg_arr[progTrace[i].src1Idx] );
         //right src
-        unsigned int depth_src2=init_2( main_table , i , main_table->reg_arr[progTrace[i].src2Idx] );
-        if(depth_src2 > depth_src1)
+        unsigned int updated_depth_2=init_2( main_table , i , main_table->reg_arr[progTrace[i].src2Idx] );
+        if(updated_depth_2 > updated_depth_1)
         {
-            main_table->inst_arr[i].depth = depth_src2;
+            main_table->inst_arr[i].depth = updated_depth_2;
         }
         else 
         {
-            main_table->inst_arr[i].depth = depth_src1;
+            main_table->inst_arr[i].depth = updated_depth_1;
         }
-            int tmp1= depth_src1 + main_table->inst_arr[i].latency;
-            int tmp2= depth_src2 + main_table->inst_arr[i].latency;
+            //finding max_depth and deliver to global int
+            int tmp1= updated_depth_1 + main_table->inst_arr[i].latency;
+            int tmp2= updated_depth_2 + main_table->inst_arr[i].latency;
             if (tmp1>tmp2)
             {
                 if (MAX_DEPTH < tmp1)
@@ -107,43 +100,41 @@ ProgCtx analyzeProg(const unsigned int opsLatency[], const InstInfo progTrace[],
                 MAX_DEPTH = tmp2;
                 }
             }
-
         main_table->reg_arr[progTrace[i].dstIdx] = i;
     }
         if(main_table != NULL)
         { 
+            //returning the "handle"
             return main_table;
         }
     return PROG_CTX_NULL;
 }
 
-void freeProgCtx(ProgCtx ctx) 
-{   
-	delete [] ((Instructions_Table*)ctx)->inst_arr;
-	delete (Instructions_Table*)ctx;
+void freeProgCtx(ProgCtx ctx) {
+    free(((instructions*)ctx)->inst_arr); 
+    free((instructions*)ctx);
 }
 
-int getInstDepth(ProgCtx ctx, unsigned int theInst) 
-{
-    if(theInst < 0  || theInst >= (((Instructions_Table*)ctx)->Number_of_instructions)) 
+int getInstDepth(ProgCtx ctx, unsigned int theInst) {
+    if( theInst < 0  || theInst >= (((instructions*)ctx)->num_of_inst))
+    {
         return -1; 
-    return ((Instructions_Table*)ctx)->inst_arr[theInst].depth;
+    } 
+    return ((instructions*)ctx)->inst_arr[theInst].depth;
 }
 
-int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) 
-{
-    if(theInst < 0 || theInst >= (((Instructions_Table*)ctx)->Number_of_instructions)) 
+int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) {
+    if(theInst < 0 || theInst >= (((instructions*)ctx)->num_of_inst)) 
+    {
         return -1;
-
-    *src1DepInst = ((Instructions_Table*)ctx)->inst_arr[theInst].dependency_1;
-    *src2DepInst = ((Instructions_Table*)ctx)->inst_arr[theInst].dependency_2;
+    }
+    *src1DepInst = ((instructions*)ctx)->inst_arr[theInst].dependency_1;
+    *src2DepInst = ((instructions*)ctx)->inst_arr[theInst].dependency_2;
     return 0;
 }
 
-int getProgDepth(ProgCtx ctx) 
-{
+int getProgDepth(ProgCtx ctx) {
     return MAX_DEPTH;
 }
-
 
 
